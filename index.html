@@ -1,0 +1,2458 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI'Han Ajan Simülatör</title>
+  <meta name="description" content="AI'Han Ajan Simülatör — Yapay zekâ ajanlarının planlama, hafıza, araç kullanımı, algı ve kendi kendini geliştirme süreçlerini gösteren interaktif portal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    referrerpolicy="no-referrer"
+  />
+  <style>
+    :root {
+      --bg: #050505;
+      --panel: #0a0a0a;
+      --panel-2: #111111;
+      --panel-3: #080808;
+      --line: #1a1a1a;
+      --line-2: #222222;
+      --line-3: #333333;
+      --text: #eeeeee;
+      --muted: #999999;
+      --soft: #666666;
+      --faint: #444444;
+      --brand: #6366f1;
+      --brand-2: #a78bfa;
+      --cyan: #06b6d4;
+      --green: #22c55e;
+      --orange: #f97316;
+      --pink: #ec4899;
+      --yellow: #eab308;
+      --danger: #dc2626;
+      --shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+      --radius: 14px;
+      --radius-sm: 10px;
+      --max: 1200px;
+      --transition: all 0.28s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 999px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    @keyframes capPulse {
+      0%, 100% { transform: scale(1.05); }
+      50% { transform: scale(1.12); }
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-8px); }
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes gridPulse {
+      0%, 100% { opacity: 0.03; }
+      50% { opacity: 0.06; }
+    }
+
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+
+    .app {
+      position: relative;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridPulse 4s ease-in-out infinite;
+    }
+
+    .scanline {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      z-index: 100;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.28), transparent);
+      animation: scanline 3s linear infinite;
+      display: none;
+    }
+
+    .scanline.active {
+      display: block;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+      background: rgba(5, 5, 5, 0.84);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: var(--shadow);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-sub {
+      color: #555;
+      font-weight: 400;
+      font-size: 13px;
+    }
+
+    .brand-desc {
+      font-size: 10px;
+      color: #444;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .glow-text {
+      background: linear-gradient(135deg, var(--brand), var(--brand-2), var(--cyan));
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientMove 3s ease infinite;
+    }
+
+    .nav {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav-btn {
+      background: transparent;
+      color: #666;
+      border: 1px solid transparent;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .nav-btn:hover {
+      background: #1a1a1a;
+    }
+
+    .nav-btn.active {
+      background: #1a1a1a;
+      border-color: #333;
+      color: #fff;
+    }
+
+    .view {
+      display: none;
+      animation: fadeSlideIn 0.45s ease;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .home-view {
+      padding-top: 40px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .hero h1 {
+      font-size: clamp(34px, 6vw, 46px);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -2px;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      color: #555;
+      font-size: 15px;
+      max-width: 660px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .capability-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .cap-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1.5px solid #333;
+      background: #111;
+      color: #555;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.5s cubic-bezier(.4,0,.2,1);
+      opacity: 0.45;
+      transform: scale(1);
+      box-shadow: none;
+      user-select: none;
+    }
+
+    .cap-badge.active {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    .cap-badge.pulsing {
+      animation: capPulse 1.5s ease-in-out infinite;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .scenario-card {
+      background: var(--panel);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .scenario-card:hover {
+      transform: translateY(-4px);
+      border-color: #444;
+      background: #111;
+    }
+
+    .scenario-card:active {
+      transform: scale(0.985);
+    }
+
+    .scenario-card.selected {
+      background: #111;
+      border-color: var(--brand);
+    }
+
+    .scenario-card .icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .scenario-card .title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .scenario-card .desc {
+      font-size: 10px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .scenario-card .preview {
+      font-size: 10px;
+      color: #555;
+      margin-top: 10px;
+      padding: 4px 8px;
+      background: #080808;
+      border-radius: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .input-panel,
+    .panel,
+    .memory-panel,
+    .stats-panel,
+    .event-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .input-panel {
+      padding: 20px;
+    }
+
+    .task-form {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .task-input {
+      flex: 1;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .task-input:focus {
+      border-color: var(--brand);
+    }
+
+    .run-btn {
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      color: #fff;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-weight: 700;
+      font-size: 13px;
+      white-space: nowrap;
+      transition: filter 0.25s ease, transform 0.2s ease;
+    }
+
+    .run-btn:hover {
+      filter: brightness(1.15);
+    }
+
+    .run-btn:active {
+      transform: translateY(1px);
+    }
+
+    .run-btn:disabled {
+      background: #222;
+      color: #555;
+      cursor: not-allowed;
+      filter: none;
+    }
+
+    .capabilities-view {
+      padding-top: 32px;
+    }
+
+    .capabilities-view h2 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+
+    .capabilities-view > p {
+      color: #555;
+      font-size: 13px;
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+
+    .cap-card {
+      background: var(--panel);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      padding: 24px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+    }
+
+    .cap-card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      border: 1px solid transparent;
+    }
+
+    .cap-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .cap-card-desc {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .cap-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .cap-card-item {
+      font-size: 11px;
+      color: #666;
+      padding: 4px 10px;
+      background: #111;
+      border-radius: 6px;
+      border-left: 2px solid rgba(255,255,255,0.18);
+    }
+
+    .cap-card-example {
+      font-size: 11px;
+      color: #555;
+      font-style: italic;
+      padding: 8px 12px;
+      background: #080808;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+
+    .sim-view {
+      padding-top: 20px;
+    }
+
+    .sim-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sim-top-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .sim-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .sim-sub {
+      font-size: 11px;
+      color: #555;
+      margin-top: 2px;
+    }
+
+    .sim-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-danger,
+    .btn-secondary {
+      border-radius: 8px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .btn-danger {
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid rgba(220, 38, 38, 0.25);
+      color: #f87171;
+    }
+
+    .btn-secondary {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #aaa;
+    }
+
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 16px;
+      min-height: 60vh;
+    }
+
+    .log-panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      max-height: 65vh;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1s infinite;
+    }
+
+    .step-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 4px;
+      scroll-behavior: smooth;
+    }
+
+    .step-card {
+      margin-bottom: 8px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #080808;
+      border: 1px solid var(--line);
+      opacity: 0.3;
+      transition: all 0.4s ease;
+    }
+
+    .step-card.done {
+      opacity: 1;
+      background: #0a0a0a;
+    }
+
+    .step-card.active {
+      opacity: 1;
+      background: #111;
+      border-color: #333;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0;
+    }
+
+    .step-card.done .step-header,
+    .step-card.active .step-header {
+      margin-bottom: 8px;
+    }
+
+    .step-icon {
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .step-card.done .step-title {
+      color: #888;
+    }
+
+    .step-card.active .step-title {
+      color: #fff;
+    }
+
+    .step-card.future .step-title {
+      color: #444;
+    }
+
+    .step-capability {
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: #444;
+      font-weight: 600;
+      background: transparent;
+      white-space: nowrap;
+    }
+
+    .step-card.active .step-capability {
+      background: rgba(99, 102, 241, 0.12);
+      color: #a5b4fc;
+    }
+
+    .substeps {
+      padding-left: 28px;
+    }
+
+    .substep {
+      font-size: 11px;
+      padding: 3px 0;
+      line-height: 1.6;
+      color: #666;
+      white-space: pre-wrap;
+      animation: fadeSlideIn 0.28s ease;
+    }
+
+    .substep.active {
+      color: #fff;
+    }
+
+    .substep.code {
+      padding: 6px 8px;
+      background: #0a0a0a;
+      border-radius: 6px;
+      border-left: 2px solid rgba(99, 102, 241, 0.28);
+      font-family: "JetBrains Mono", monospace;
+      margin-bottom: 4px;
+    }
+
+    .substep-dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--brand);
+      margin-right: 6px;
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+    }
+
+    .tool-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      transition: var(--transition);
+      margin: 6px 0 0 28px;
+      border: 1px solid transparent;
+    }
+
+    .tool-indicator .tool-light {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    .thinking {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: #111;
+      border: 1px solid #222;
+      margin-top: 8px;
+    }
+
+    .thinking-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .thinking-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--brand);
+    }
+
+    .thinking-dots span:nth-child(1) { animation: dotBounce 1.2s 0s infinite; }
+    .thinking-dots span:nth-child(2) { animation: dotBounce 1.2s 0.15s infinite; }
+    .thinking-dots span:nth-child(3) { animation: dotBounce 1.2s 0.3s infinite; }
+
+    .thinking-text {
+      color: #888;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .sim-side {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stats-panel,
+    .memory-panel,
+    .event-panel {
+      padding: 16px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-box {
+      background: #111;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+      border: 1px solid var(--line);
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .stat-label {
+      font-size: 9px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .memory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .memory-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #111;
+      border: 1px solid var(--line);
+      transition: var(--transition);
+    }
+
+    .memory-item.active {
+      background: rgba(52, 211, 153, 0.08);
+      border-color: rgba(52, 211, 153, 0.28);
+    }
+
+    .memory-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .memory-type {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .memory-content {
+      color: #ccc;
+      font-size: 12px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .memory-content b {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .memory-time {
+      color: #555;
+      font-size: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .event-panel {
+      flex: 1;
+      min-height: 120px;
+      max-height: 200px;
+      overflow: auto;
+    }
+
+    .event-item {
+      font-size: 10px;
+      color: #666;
+      padding: 3px 0;
+      border-bottom: 1px solid #111;
+      animation: fadeSlideIn 0.3s ease;
+    }
+
+    .event-time {
+      color: #444;
+      margin-right: 6px;
+    }
+
+    .result-card {
+      margin-top: 16px;
+      padding: 20px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0a0a0a 0%, #111 100%);
+      border: 1px solid #333;
+      animation: fadeSlideIn 0.5s ease;
+    }
+
+    .result-content {
+      white-space: pre-wrap;
+      color: #ddd;
+      font-size: 13px;
+      line-height: 1.7;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .result-h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin: 12px 0 8px;
+      font-family: "Inter", sans-serif;
+    }
+
+    .result-h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #a5b4fc;
+      margin: 10px 0 6px;
+      font-family: "Inter", sans-serif;
+    }
+
+    .result-line {
+      color: #999;
+      font-family: "Inter", sans-serif;
+    }
+
+    .result-bullet,
+    .result-number {
+      padding-left: 12px;
+      color: #bbb;
+      font-family: "Inter", sans-serif;
+    }
+
+    .result-table {
+      color: #888;
+      font-size: 11px;
+    }
+
+    .progress-wrap {
+      width: 70px;
+      height: 70px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .progress-wrap svg {
+      width: 70px;
+      height: 70px;
+      transform: rotate(-90deg);
+      overflow: visible;
+    }
+
+    .progress-text {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: #a5b4fc;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 32px 0 20px;
+      border-top: 1px solid #0a0a0a;
+      margin-top: 40px;
+    }
+
+    .footer .logo {
+      font-size: 11px;
+      letter-spacing: 1.4px;
+      color: #d8d8d8;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .footer .tagline {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 14px;
+    }
+
+    .footer .links {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      margin-bottom: 12px;
+    }
+
+    .footer .links a {
+      color: #aaa;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: var(--transition);
+    }
+
+    .footer .links a:hover {
+      color: #fff;
+    }
+
+    .footer small {
+      color: #444;
+      font-size: 11px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 980px) {
+      .sim-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .log-panel {
+        max-height: none;
+      }
+
+      .event-panel {
+        max-height: 220px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .task-form {
+        flex-direction: column;
+      }
+
+      .cap-card {
+        grid-template-columns: 1fr;
+      }
+
+      .cap-card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sim-topbar {
+        align-items: flex-start;
+      }
+
+      .sim-top-left {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div id="scanline" class="scanline" aria-hidden="true"></div>
+
+    <div class="container">
+      <header class="header">
+        <div class="brand-wrap">
+          <div class="brand-icon">A</div>
+          <div>
+            <div class="brand-title">
+              <span class="glow-text">AI'Han Ajan Simülatör</span>
+              <span class="brand-sub">Pro Portal</span>
+            </div>
+            <div class="brand-desc">Yapay Zekâ Ajan Simülasyon Portalı</div>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-btn active" data-view-target="home">
+            <span>⌂</span> Ana Sayfa
+          </button>
+          <button class="nav-btn" data-view-target="capabilities">
+            <span>◈</span> Yetenekler
+          </button>
+        </nav>
+      </header>
+
+      <main>
+        <!-- HOME -->
+        <section id="view-home" class="view home-view active">
+          <div class="hero">
+            <h1>
+              <span class="glow-text">Yapay Zekâ Ajanı</span><br />
+              <span style="color:#666;">Nasıl Düşünür?</span>
+            </h1>
+            <p>
+              Gerçek bir AI ajanının beş temel yeteneğini interaktif olarak deneyimleyin.
+              Bir senaryo seçin veya kendi görevinizi yazın.
+            </p>
+          </div>
+
+          <div id="homeCapabilities" class="capability-row"></div>
+
+          <div style="margin-bottom:32px;">
+            <div class="section-label">Hazır Senaryolar</div>
+            <div id="scenarioGrid" class="scenario-grid"></div>
+          </div>
+
+          <div class="input-panel">
+            <div class="section-label">Özel Görev Gir</div>
+            <div class="task-form">
+              <input
+                id="customPrompt"
+                class="task-input"
+                type="text"
+                placeholder="Ajanın yapmasını istediğiniz görevi yazın..."
+                autocomplete="off"
+              />
+              <button id="runBtn" class="run-btn" disabled>▶ Simülasyonu Başlat</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CAPABILITIES -->
+        <section id="view-capabilities" class="view capabilities-view">
+          <h2><span class="glow-text">Ajan Yetenekleri</span></h2>
+          <p>
+            Bir yapay zeka ajanını basit bir chatbot'tan ayıran beş temel yetenek.
+          </p>
+          <div id="capabilityCards"></div>
+        </section>
+
+        <!-- SIMULATION -->
+        <section id="view-simulation" class="view sim-view">
+          <div class="sim-topbar">
+            <div class="sim-top-left">
+              <div class="progress-wrap">
+                <svg viewBox="0 0 70 70" aria-hidden="true">
+                  <circle cx="35" cy="35" r="28" fill="none" stroke="#1a1a1a" stroke-width="4"></circle>
+                  <circle
+                    id="progressCircle"
+                    cx="35"
+                    cy="35"
+                    r="28"
+                    fill="none"
+                    stroke="#6366f1"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                  ></circle>
+                </svg>
+                <div id="progressText" class="progress-text">0%</div>
+              </div>
+
+              <div>
+                <div id="simStatus" class="sim-title">⚡ Ajan Çalışıyor...</div>
+                <div id="simStepInfo" class="sim-sub">Adım 1 / 1</div>
+              </div>
+            </div>
+
+            <div class="sim-actions">
+              <button id="stopBtn" class="btn-danger">⏹ Durdur</button>
+              <button id="resetBtn" class="btn-secondary">↩ Yeni Görev</button>
+            </div>
+          </div>
+
+          <div id="simulationCapabilities" class="capability-row" style="justify-content:flex-start; margin-bottom:16px;"></div>
+
+          <div class="sim-layout">
+            <div class="log-panel">
+              <div class="panel-title">
+                <span id="statusDot" class="status-dot"></span>
+                Ajan İşlem Akışı
+              </div>
+              <div id="stepLog" class="step-log"></div>
+              <div id="thinkingIndicator" class="thinking hidden">
+                <div class="thinking-dots">
+                  <span></span><span></span><span></span>
+                </div>
+                <div class="thinking-text">Ajan düşünüyor...</div>
+              </div>
+            </div>
+
+            <aside class="sim-side">
+              <div class="stats-panel">
+                <div class="panel-title">İstatistikler</div>
+                <div class="stats-grid" id="statsGrid"></div>
+              </div>
+
+              <div class="memory-panel">
+                <div class="panel-title">
+                  <span>🧠</span> Ajan Hafızası
+                </div>
+                <div id="memoryList" class="memory-list"></div>
+              </div>
+
+              <div class="event-panel">
+                <div class="panel-title">Olay Günlüğü</div>
+                <div id="eventLog"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="logo">•Agents of AI'HAN ACADEMY</div>
+        <div class="tagline">Think • Code • Learn • Create! 🚀</div>
+        <div class="links">
+          <a href="https://www.linkedin.com/in/ayhanbozkurt/" target="_blank" rel="noopener">
+            <i class="fab fa-linkedin"></i> LinkedIn
+          </a>
+          <a href="https://github.com/ayhanbzkrt" target="_blank" rel="noopener">
+            <i class="fab fa-github"></i> GitHub
+          </a>
+          <a href="#" id="backTopLink">
+            <i class="fas fa-arrow-up"></i> <span id="tBackToTop">Başa Dön</span>
+          </a>
+        </div>
+        <small>© 2026 AI'Han Agent</small>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const AGENT_NAME = "AI'Han Ajan";
+      const allCapabilities = ["Planlama", "Hafıza", "Araç Kullanımı", "Kendi Kendini Geliştirme", "Algı"];
+      const TOOLS = {
+        web_search: { icon: "🌐", label: "Web Araması", color: "#00d4aa" },
+        calculator: { icon: "🧮", label: "Hesap Makinesi", color: "#f0a500" },
+        code_exec: { icon: "⚡", label: "Kod Çalıştırma", color: "#a78bfa" },
+        file_read: { icon: "📂", label: "Dosya Okuma", color: "#60a5fa" },
+        image_analyze: { icon: "🖼️", label: "Görüntü Analizi", color: "#f472b6" },
+        memory_store: { icon: "🧠", label: "Hafıza Kayıt", color: "#34d399" }
+      };
+
+      const SCENARIOS = [
+        {
+          id: "travel",
+          title: "Seyahat Planlama",
+          icon: "✈️",
+          prompt: "3 günlük İstanbul tatili planla, bütçem 5000 TL",
+          description: "Planlama + Araç Kullanımı + Hafıza"
+        },
+        {
+          id: "data",
+          title: "Veri Analizi",
+          icon: "📊",
+          prompt: "Bu satış verilerini analiz et ve trend raporu oluştur",
+          description: "Algı + Kod Çalıştırma + Planlama"
+        },
+        {
+          id: "debug",
+          title: "Kod Hata Ayıklama",
+          icon: "🐛",
+          prompt: "Bu Python kodundaki hatayı bul ve düzelt",
+          description: "Algı + Araç Kullanımı + Kendi Kendini Geliştirme"
+        },
+        {
+          id: "research",
+          title: "Araştırma Görevi",
+          icon: "🔬",
+          prompt: "Yapay zeka etiği hakkında kapsamlı bir araştırma yap",
+          description: "Planlama + Web Araması + Hafıza"
+        },
+        {
+          id: "creative",
+          title: "Yaratıcı Proje",
+          icon: "🎨",
+          prompt: "Bir startup için marka kimliği ve logo konsepti oluştur",
+          description: "Planlama + Algı + Kendi Kendini Geliştirme"
+        }
+      ];
+
+      const MEMORY_ITEMS_INIT = [
+        { key: "user_lang", value: "Türkçe", ts: "Önceki oturum", type: "preference" },
+        { key: "prev_task", value: "Python veri analizi", ts: "2 saat önce", type: "context" },
+        { key: "user_skill", value: "Orta seviye programcı", ts: "Önceki oturum", type: "profile" }
+      ];
+
+      const CAPABILITY_META = {
+        "Planlama": { bg: "#1a1a3e", border: "#6366f1", text: "#a5b4fc", icon: "📋" },
+        "Hafıza": { bg: "#1a2e1a", border: "#22c55e", text: "#86efac", icon: "🧠" },
+        "Araç Kullanımı": { bg: "#2e1a1a", border: "#f97316", text: "#fdba74", icon: "🔧" },
+        "Kendi Kendini Geliştirme": { bg: "#2e1a2e", border: "#ec4899", text: "#f9a8d4", icon: "🔄" },
+        "Algı": { bg: "#1a2e2e", border: "#06b6d4", text: "#67e8f9", icon: "👁️" },
+        "Sentez": { bg: "#2e2e1a", border: "#eab308", text: "#fde047", icon: "✅" }
+      };
+
+      const CAPABILITY_CARDS = [
+        {
+          name: "Planlama",
+          icon: "📋",
+          color: "#6366f1",
+          desc: "Karmaşık görevleri alt görevlere böler, öncelik sıralar, bağımlılıkları yönetir.",
+          details: [
+            "Hiyerarşik görev ayrıştırma (Task Decomposition)",
+            "Bağımlılık grafiği oluşturma",
+            "Dinamik yeniden planlama",
+            "Çoklu strateji değerlendirmesi"
+          ],
+          example: "\"3 günlük tatil planla\" → Konaklama + Ulaşım + Aktivite + Bütçe alt görevleri"
+        },
+        {
+          name: "Hafıza",
+          icon: "🧠",
+          color: "#22c55e",
+          desc: "Geçmiş etkileşimleri, tercihleri ve bağlamı hatırlar, zaman içinde gelişir.",
+          details: [
+            "Kısa süreli hafıza (oturum içi bağlam)",
+            "Uzun süreli hafıza (oturumlar arası)",
+            "Semantik bellek (kavramlar arası ilişki)",
+            "Episodik bellek (geçmiş deneyimler)"
+          ],
+          example: "Kullanıcının vejetaryen olduğunu hatırlayıp restoran önerilerini filtreler"
+        },
+        {
+          name: "Araç Kullanımı",
+          icon: "🔧",
+          color: "#f97316",
+          desc: "Web araması, hesap makinesi, kod çalıştırma gibi dış araçları kullanır.",
+          details: [
+            "Web arama motorları",
+            "Kod çalıştırma ortamları (Python, JS)",
+            "Hesap makinesi ve matematik işlemler",
+            "Dosya okuma/yazma, API çağrıları"
+          ],
+          example: "Bütçe hesabı için hesap makinesi + otel fiyatları için web araması"
+        },
+        {
+          name: "Kendi Kendini Geliştirme",
+          icon: "🔄",
+          color: "#ec4899",
+          desc: "Hatalarından ders çıkarır, sonuçlarını değerlendirir, stratejilerini optimize eder.",
+          details: [
+            "Hata tespiti ve düzeltme (self-reflection)",
+            "Çıktı kalite değerlendirmesi",
+            "Strateji optimizasyonu",
+            "Öğrenme kaydı (gelecek görevler için)"
+          ],
+          example: "Bütçe aşımı tespit edip otomatik olarak daha ekonomik alternatif önerir"
+        },
+        {
+          name: "Algı",
+          icon: "👁️",
+          color: "#06b6d4",
+          desc: "Çevresini — dosyaları, görüntüleri, verileri, kodu — anlayıp yorumlar.",
+          details: [
+            "Doğal dil anlama (NLU)",
+            "Görüntü ve belge analizi",
+            "Veri yapısı tanıma",
+            "Bağlam ve niyet çıkarımı"
+          ],
+          example: "CSV dosyasının yapısını otomatik algılayıp uygun analiz stratejisi seçer"
+        }
+      ];
+
+      function buildAgentSteps(scenarioId, userPrompt) {
+        const plans = {
+          travel: [
+            {
+              phase: "planning",
+              title: "Görev Analizi & Alt Görevlere Bölme",
+              capability: "Planlama",
+              icon: "📋",
+              substeps: [
+                "Ana hedef belirlendi: 3 günlük İstanbul tatili, 5000 TL bütçe",
+                "Alt görev 1: Konaklama araştırması",
+                "Alt görev 2: Ulaşım planlaması",
+                "Alt görev 3: Gezilecek yerler & aktiviteler",
+                "Alt görev 4: Yemek & restoran önerileri",
+                "Alt görev 5: Bütçe dağılımı optimizasyonu"
+              ]
+            },
+            {
+              phase: "memory",
+              title: "Hafıza Sorgulaması",
+              capability: "Hafıza",
+              icon: "🧠",
+              substeps: [
+                "Geçmiş oturumlar taranıyor...",
+                "✓ Kullanıcı dili: Türkçe (hafızadan)",
+                "✓ Önceki seyahat tercihi: Kültürel geziler (hafızadan)",
+                "✓ Yemek tercihi: Vejetaryen (hafızadan)",
+                "Bağlamsal bilgiler yüklendi → Plana entegre ediliyor"
+              ]
+            },
+            {
+              phase: "tool_use",
+              title: "Araç Kullanımı: Web Araması",
+              capability: "Araç Kullanımı",
+              icon: "🌐",
+              toolId: "web_search",
+              substeps: [
+                "🔍 Arama: \"İstanbul uygun fiyatlı oteller 2025\"",
+                "→ 47 sonuç bulundu, en iyi 5 filtreleniyor...",
+                "🔍 Arama: \"İstanbul müze kart fiyatları güncel\"",
+                "→ Müze Kart: 750 TL (tüm müzeler dahil)",
+                "🔍 Arama: \"İstanbul toplu ulaşım fiyatları\"",
+                "→ İstanbulkart günlük ortalama: 80 TL"
+              ]
+            },
+            {
+              phase: "tool_use_2",
+              title: "Araç Kullanımı: Hesap Makinesi",
+              capability: "Araç Kullanımı",
+              icon: "🧮",
+              toolId: "calculator",
+              substeps: [
+                "Bütçe hesaplaması başlatılıyor...",
+                "Konaklama: 3 gece × 600 TL = 1800 TL",
+                "Ulaşım: 3 gün × 80 TL = 240 TL",
+                "Müze Kart: 750 TL",
+                "Yemek: 3 gün × 400 TL = 1200 TL",
+                "Toplam: 3990 TL | Kalan: 1010 TL (aktiviteler için)"
+              ]
+            },
+            {
+              phase: "self_improve",
+              title: "Kendi Kendini Geliştirme",
+              capability: "Kendi Kendini Geliştirme",
+              icon: "🔄",
+              substeps: [
+                "Plan değerlendirmesi yapılıyor...",
+                "⚠️ Tespit: Konaklama bütçesi yüksek olabilir",
+                "→ Alternatif: Hostel seçeneği ile 900 TL tasarruf",
+                "✓ Düzeltme uygulandı: Bütçe yeniden optimize edildi",
+                "📝 Öğrenme kaydı: Bu kullanıcı için bütçe-öncelikli plan tercih et"
+              ]
+            },
+            {
+              phase: "result",
+              title: "Sonuç Üretimi",
+              capability: "Sentez",
+              icon: "✅",
+              isResult: true,
+              content: `## 🗺️ 3 Günlük İstanbul Tatil Planı
+
+**Bütçe: 5000 TL**
+
+### Gün 1 — Tarihi Yarımada
+- 🕌 Sultanahmet Camii & Ayasofya (Müze Kart ile)
+- 🏛️ Topkapı Sarayı
+- 🍽️ Öğle: Sultanahmet Köftecisi (vejetaryen seçenekler mevcut)
+- 🌅 Akşam: Eminönü sahili yürüyüşü
+
+### Gün 2 — Boğaz & Modern İstanbul
+- ⛴️ Boğaz turu (öğrenci/indirimli: 150 TL)
+- 🎨 İstanbul Modern Sanat Müzesi
+- 🍽️ Öğle: Karaköy lokantası
+- 🛍️ İstiklal Caddesi & Galata Kulesi
+
+### Gün 3 — Asya Yakası
+- 🚇 Kadıköy çarşı gezisi
+- ☕ Moda sahili kahve molası
+- 🍽️ Çiya Sofrası (vejetaryen cennet!)
+- 📸 Kız Kulesi manzarası
+
+### 💰 Bütçe Dağılımı
+| Kalem | Tutar |
+|-------|-------|
+| Konaklama (hostel) | 900 TL |
+| Ulaşım | 390 TL |
+| Müze Kart | 750 TL |
+| Yemek | 1200 TL |
+| Aktiviteler | 1010 TL |
+| **Kalan (acil)** | **750 TL** |`
+            }
+          ],
+          data: [
+            {
+              phase: "perception",
+              title: "Algılama: Veri Dosyası Analizi",
+              capability: "Algı",
+              icon: "👁️",
+              substeps: [
+                "Dosya tipi algılandı: CSV (satış verileri)",
+                "Boyut: 2.4 MB, 15.000 satır, 12 sütun",
+                "Sütunlar: tarih, ürün, kategori, miktar, fiyat, bölge...",
+                "Veri kalitesi: %97.3 tamamlanmış, 412 eksik değer tespit edildi",
+                "Tarih aralığı: Ocak 2024 — Aralık 2024"
+              ]
+            },
+            {
+              phase: "planning",
+              title: "Analiz Planı Oluşturma",
+              capability: "Planlama",
+              icon: "📋",
+              substeps: [
+                "Alt görev 1: Veri temizleme & ön işleme",
+                "Alt görev 2: Tanımlayıcı istatistikler",
+                "Alt görev 3: Zaman serisi trend analizi",
+                "Alt görev 4: Kategori bazlı karşılaştırma",
+                "Alt görev 5: Anomali tespiti",
+                "Alt görev 6: Görselleştirme & rapor"
+              ]
+            },
+            {
+              phase: "tool_use",
+              title: "Kod Çalıştırma: Python Analiz",
+              capability: "Araç Kullanımı",
+              icon: "⚡",
+              toolId: "code_exec",
+              substeps: [
+                "```python\nimport pandas as pd\ndf = pd.read_csv('sales_data.csv')\ndf.describe()\n```",
+                "→ Çalıştırılıyor... ✓ (0.34s)",
+                "Eksik değerler dolduruldu (median imputation)",
+                "Aylık satış trendi hesaplandı",
+                "→ Q3'te %23 artış tespit edildi",
+                "Anomali: Eylül ayında beklenmedik düşüş (−18%)"
+              ]
+            },
+            {
+              phase: "self_improve",
+              title: "Kendi Kendini Geliştirme",
+              capability: "Kendi Kendini Geliştirme",
+              icon: "🔄",
+              substeps: [
+                "İlk analiz sonuçları değerlendiriliyor...",
+                "⚠️ Eylül düşüşü → Mevsimsel mi, anomali mi?",
+                "→ Ek analiz: Geçmiş yıl Eylül verileri ile karşılaştırma",
+                "✓ Sonuç: Mevsimsel değil, gerçek anomali (bayram etkisi)",
+                "📝 Model güncellendi: Bayram dönemleri ayrı değerlendirilecek"
+              ]
+            },
+            {
+              phase: "result",
+              title: "Analiz Raporu",
+              capability: "Sentez",
+              icon: "✅",
+              isResult: true,
+              content: `## 📊 Satış Verisi Trend Raporu
+
+**Dönem:** Ocak 2024 — Aralık 2024
+
+### Temel Bulgular
+- 📈 Yıllık büyüme: **+31.4%**
+- 🏆 En iyi ay: Kasım (Black Friday etkisi: +45%)
+- ⚠️ Anomali: Eylül (−18%, bayram dönem etkisi)
+- 🎯 En karlı kategori: Elektronik (%42 pay)
+
+### Trend Analizi
+Q1→Q2: Yavaş büyüme (+8%)
+Q2→Q3: Hızlı büyüme (+23%)
+Q3→Q4: Patlama (+45%, mevsimsel)
+
+### Öneriler
+1. Bayram dönemlerinde özel kampanya planla
+2. Elektronik kategorisine yatırımı artır
+3. Q1 için agresif pazarlama stratejisi gerekli`
+            }
+          ],
+          debug: [
+            {
+              phase: "perception",
+              title: "Algılama: Kod Analizi",
+              capability: "Algı",
+              icon: "👁️",
+              substeps: [
+                "Dosya algılandı: main.py (Python 3.11)",
+                "Toplam: 142 satır, 5 fonksiyon, 2 sınıf",
+                "Import'lar: requests, json, datetime",
+                "Sözdizimi hatası taraması başlatılıyor...",
+                "⚠️ 3 potansiyel sorun noktası tespit edildi"
+              ]
+            },
+            {
+              phase: "planning",
+              title: "Hata Ayıklama Planı",
+              capability: "Planlama",
+              icon: "📋",
+              substeps: [
+                "Alt görev 1: Sözdizimi analizi (AST parsing)",
+                "Alt görev 2: Mantık akışı takibi",
+                "Alt görev 3: Değişken kapsam kontrolü",
+                "Alt görev 4: Edge case tespiti",
+                "Alt görev 5: Düzeltme & test"
+              ]
+            },
+            {
+              phase: "tool_use",
+              title: "Kod Çalıştırma: Test & Debug",
+              capability: "Araç Kullanımı",
+              icon: "⚡",
+              toolId: "code_exec",
+              substeps: [
+                "```python\n# Test 1: Fonksiyon çağrısı\nresult = process_data(sample)\n# TypeError: 'NoneType' has no len()\n```",
+                "→ Hata satırı: 47 — process_data()",
+                "Kök neden analizi: data parametresi None olabiliyor",
+                "```python\n# Düzeltme:\ndef process_data(data):\n    if data is None:\n        return []\n    return [x for x in data if x > 0]\n```",
+                "→ Test tekrar çalıştırılıyor... ✓ Tüm testler geçti"
+              ]
+            },
+            {
+              phase: "self_improve",
+              title: "Kendi Kendini Geliştirme",
+              capability: "Kendi Kendini Geliştirme",
+              icon: "🔄",
+              substeps: [
+                "Hata paternleri analiz ediliyor...",
+                "⚠️ Bu tip NoneType hatası sık karşılaşılan bir pattern",
+                "→ Kural eklendi: Fonksiyon girişlerinde None kontrolü öner",
+                "→ Benzer 2 fonksiyonda da aynı risk tespit edildi",
+                "✓ Proaktif düzeltme: Diğer fonksiyonlar da güncellendi",
+                "📝 Öğrenme: Defensive programming önerileri ekle"
+              ]
+            },
+            {
+              phase: "result",
+              title: "Hata Ayıklama Raporu",
+              capability: "Sentez",
+              icon: "✅",
+              isResult: true,
+              content: `## 🐛 Hata Ayıklama Raporu
+
+### Bulunan Hatalar (3)
+
+**Hata 1 — Kritik** (Satır 47)
+- \`TypeError: 'NoneType' has no len()\`
+- Neden: \`process_data()\` None girişi işleyemiyor
+- Düzeltme: None guard eklendi
+
+**Hata 2 — Orta** (Satır 89)
+- \`IndexError: list index out of range\`
+- Neden: Boş liste kontrolü eksik
+- Düzeltme: Boundary check eklendi
+
+**Hata 3 — Düşük** (Satır 112)
+- Kullanılmayan import: \`import os\`
+- Düzeltme: Kaldırıldı
+
+### Test Sonuçları
+✅ 12/12 test geçti (düzeltme sonrası)
+📈 Kod kalite skoru: 67 → 94`
+            }
+          ],
+          research: [
+            {
+              phase: "planning",
+              title: "Araştırma Planı Oluşturma",
+              capability: "Planlama",
+              icon: "📋",
+              substeps: [
+                "Ana konu: Yapay Zeka Etiği",
+                "Alt görev 1: Temel etik çerçeveler",
+                "Alt görev 2: Güncel tartışmalar & vakalar",
+                "Alt görev 3: Regülasyon & yasal durum",
+                "Alt görev 4: Farklı perspektifler (endüstri vs akademi)",
+                "Alt görev 5: Sentez & sonuç raporu"
+              ]
+            },
+            {
+              phase: "tool_use",
+              title: "Web Araması: Kaynak Taraması",
+              capability: "Araç Kullanımı",
+              icon: "🌐",
+              toolId: "web_search",
+              substeps: [
+                "🔍 \"AI ethics frameworks 2025\"",
+                "→ 128 akademik kaynak bulundu",
+                "🔍 \"yapay zeka etik düzenlemeleri EU AI Act\"",
+                "→ AB Yapay Zeka Yasası detayları çekildi",
+                "🔍 \"AI bias discrimination cases recent\"",
+                "→ 23 güncel vaka çalışması bulundu",
+                "🔍 \"Türkiye yapay zeka strateji belgesi\"",
+                "→ Ulusal AI Stratejisi 2025 belgesi bulundu"
+              ]
+            },
+            {
+              phase: "memory",
+              title: "Hafıza Entegrasyonu",
+              capability: "Hafıza",
+              icon: "🧠",
+              substeps: [
+                "Geçmiş araştırmalar taranıyor...",
+                "✓ Önceki oturum: 'Makine öğrenmesi bias çalışması' bulundu",
+                "✓ İlgili notlar: Fairness metrikleri karşılaştırması",
+                "→ Mevcut araştırmaya entegre ediliyor",
+                "Çapraz referanslar oluşturuluyor..."
+              ]
+            },
+            {
+              phase: "self_improve",
+              title: "Kendi Kendini Geliştirme",
+              capability: "Kendi Kendini Geliştirme",
+              icon: "🔄",
+              substeps: [
+                "Kaynak güvenilirliği değerlendiriliyor...",
+                "⚠️ 3 kaynak düşük güvenilirlik skoru → Çıkarıldı",
+                "→ Sadece hakemli dergiler ve resmi belgeler korundu",
+                "✓ Argüman tutarlılığı kontrol edildi",
+                "📝 Öğrenme: Etik konularda çok-perspektifli yaklaşım uygula"
+              ]
+            },
+            {
+              phase: "result",
+              title: "Araştırma Raporu",
+              capability: "Sentez",
+              icon: "✅",
+              isResult: true,
+              content: `## 🔬 Yapay Zeka Etiği: Kapsamlı Araştırma
+
+### 1. Temel Etik Çerçeveler
+- **Şeffaflık**: Kararların açıklanabilir olması
+- **Adalet**: Önyargısız ve eşit muamele
+- **Hesap Verebilirlik**: Sorumluluk zinciri
+- **Gizlilik**: Veri koruma ve mahremiyet
+
+### 2. Güncel Düzenlemeler
+- 🇪🇺 AB AI Act (2024): Risk bazlı sınıflandırma
+- 🇹🇷 Türkiye Ulusal AI Stratejisi: Etik kurul oluşumu
+- 🇺🇸 ABD: Sektörel düzenleme yaklaşımı
+
+### 3. Kritik Tartışmalar
+- Otonom silahlar ve karar verme
+- İşgücü dönüşümü ve eşitsizlik
+- Deepfake ve bilgi manipülasyonu
+- Bias ve ayrımcılık vakaları
+
+### 4. Öneriler
+1. Çok-paydaşlı yönetişim modeli
+2. Etki değerlendirmesi zorunluluğu
+3. Denetim mekanizmaları güçlendirilmeli`
+            }
+          ],
+          creative: [
+            {
+              phase: "perception",
+              title: "Algılama: Brief Analizi",
+              capability: "Algı",
+              icon: "👁️",
+              substeps: [
+                "Görev tipi: Yaratıcı tasarım — marka kimliği",
+                "Hedef kitle analizi gerekiyor",
+                "Sektör: Startup (detay isteniyor)",
+                "Çıktı formatı: Konsept dokümanı + görsel öneriler",
+                "Kısıtlamalar: Belirlenmemiş → Varsayılan parametreler kullanılacak"
+              ]
+            },
+            {
+              phase: "planning",
+              title: "Yaratıcı Süreç Planı",
+              capability: "Planlama",
+              icon: "📋",
+              substeps: [
+                "Faz 1: Pazar araştırması & rakip analizi",
+                "Faz 2: Marka kişiliği tanımlama",
+                "Faz 3: İsim & slogan alternatifleri",
+                "Faz 4: Renk paleti & tipografi",
+                "Faz 5: Logo konsept geliştirme",
+                "Faz 6: Marka rehberi taslağı"
+              ]
+            },
+            {
+              phase: "tool_use",
+              title: "Web Araması: Pazar Araştırması",
+              capability: "Araç Kullanımı",
+              icon: "🌐",
+              toolId: "web_search",
+              substeps: [
+                "🔍 \"tech startup branding trends 2025\"",
+                "→ Minimalist ve bold tipografi trendi hakim",
+                "🔍 \"successful startup logo examples\"",
+                "→ Geometrik formlar + gradient kombinasyonları popüler",
+                "🔍 \"brand color psychology technology\"",
+                "→ Mavi=güven, Yeşil=büyüme, Turuncu=yenilik"
+              ]
+            },
+            {
+              phase: "self_improve",
+              title: "Kendi Kendini Geliştirme",
+              capability: "Kendi Kendini Geliştirme",
+              icon: "🔄",
+              substeps: [
+                "İlk konseptler değerlendiriliyor...",
+                "⚠️ Konsept A: Çok generic, rakiplerle karışır",
+                "→ Daha cesur ve ayırt edici yaklaşım gerekiyor",
+                "✓ Konsept B revize edildi: Daha özgün karakter",
+                "📝 Öğrenme: Yaratıcı işlerde ilk fikirden kaçın, 3. iterasyon optimal"
+              ]
+            },
+            {
+              phase: "result",
+              title: "Marka Kimliği Konsepti",
+              capability: "Sentez",
+              icon: "✅",
+              isResult: true,
+              content: `## 🎨 Marka Kimliği Konsepti
+
+### Marka Adı Önerileri
+1. **Velora** — Hız + Değer
+2. **Synthi** — Sentez + Teknoloji
+3. **Pulsed** — Enerji + Ritim
+
+### Renk Paleti (Önerilen: Velora)
+- Ana: #1A1A2E (Derin Lacivert)
+- Vurgu: #E94560 (Enerji Kırmızı)
+- Destek: #16213E (Gece Mavisi)
+- Nötr: #F5F5F5 (Temiz Beyaz)
+
+### Tipografi
+- Başlık: **Clash Display** (Bold, modern)
+- Gövde: **Satoshi** (Okunabilir, temiz)
+
+### Logo Konsepti
+Geometrik "V" harfi, negatif alan içinde
+gizli yıldırım sembolü — hız ve değer teması
+
+### Marka Sesi
+- Ton: Kendinden emin ama samimi
+- Dil: Teknik jargondan kaçınan, anlaşılır
+- Slogan: "Geleceği hızlandır."`
+            }
+          ]
+        };
+
+        if (!plans[scenarioId]) {
+          return [
+            {
+              phase: "perception",
+              title: "Algılama: Girdi Analizi",
+              capability: "Algı",
+              icon: "👁️",
+              substeps: [
+                `Kullanıcı girdisi alındı: "${(userPrompt || "").slice(0, 60)}..."`,
+                "Doğal dil işleme ile niyet çıkarımı yapılıyor...",
+                "Görev tipi: Genel sorgulama",
+                "Karmaşıklık seviyesi: Orta",
+                "Gerekli yetenekler: Planlama + Araç Kullanımı + Hafıza"
+              ]
+            },
+            {
+              phase: "planning",
+              title: "Görev Planlama",
+              capability: "Planlama",
+              icon: "📋",
+              substeps: [
+                "Görev alt bileşenlere ayrılıyor...",
+                "Alt görev 1: Bağlam toplama",
+                "Alt görev 2: İlgili bilgi kaynakları belirleme",
+                "Alt görev 3: Analiz ve sentez",
+                "Alt görev 4: Yanıt oluşturma ve doğrulama"
+              ]
+            },
+            {
+              phase: "memory",
+              title: "Hafıza Sorgulaması",
+              capability: "Hafıza",
+              icon: "🧠",
+              substeps: [
+                "Uzun süreli hafıza taranıyor...",
+                "İlgili geçmiş etkileşimler aranıyor...",
+                "✓ Kullanıcı profili yüklendi",
+                "✓ Bağlamsal bilgiler entegre edildi"
+              ]
+            },
+            {
+              phase: "tool_use",
+              title: "Araç Kullanımı",
+              capability: "Araç Kullanımı",
+              icon: "🌐",
+              toolId: "web_search",
+              substeps: [
+                `🔍 Arama: "${(userPrompt || "").split(" ").slice(0, 4).join(" ")}"`,
+                "→ İlgili sonuçlar filtreleniyor...",
+                "→ En güncel ve güvenilir kaynaklar seçildi",
+                "Bilgi sentezleniyor..."
+              ]
+            },
+            {
+              phase: "self_improve",
+              title: "Kalite Kontrolü",
+              capability: "Kendi Kendini Geliştirme",
+              icon: "🔄",
+              substeps: [
+                "Yanıt kalitesi değerlendiriliyor...",
+                "Doğruluk kontrolü: ✓",
+                "Tutarlılık kontrolü: ✓",
+                "📝 İyileştirme notu kaydedildi"
+              ]
+            },
+            {
+              phase: "result",
+              title: "Sonuç",
+              capability: "Sentez",
+              icon: "✅",
+              isResult: true,
+              content: `## Görev Tamamlandı
+
+Girdiniz başarıyla işlendi. Tüm ajan yetenekleri (Planlama, Hafıza, Araç Kullanımı, Kendi Kendini Geliştirme, Algı) koordineli bir şekilde çalıştı.
+
+Bu simülasyon, gerçek bir AI ajanının görevinizi nasıl işleyeceğini göstermektedir.`
+            }
+          ];
+        }
+
+        return plans[scenarioId];
+      }
+
+      const state = {
+        activeView: "home",
+        selectedScenario: null,
+        customPrompt: "",
+        isRunning: false,
+        isComplete: false,
+        steps: [],
+        currentStep: 0,
+        currentSubstep: 0,
+        progress: 0,
+        activeCapability: null,
+        memoryItems: [...MEMORY_ITEMS_INIT],
+        activeMemKey: null,
+        logs: [],
+        stats: { tasks: 0, tools: 0, memories: 0, improvements: 0 },
+        timerId: null
+      };
+
+      const els = {
+        navButtons: Array.from(document.querySelectorAll(".nav-btn")),
+        views: {
+          home: document.getElementById("view-home"),
+          capabilities: document.getElementById("view-capabilities"),
+          simulation: document.getElementById("view-simulation")
+        },
+        scanline: document.getElementById("scanline"),
+        scenarioGrid: document.getElementById("scenarioGrid"),
+        homeCapabilities: document.getElementById("homeCapabilities"),
+        simulationCapabilities: document.getElementById("simulationCapabilities"),
+        capabilityCards: document.getElementById("capabilityCards"),
+        customPrompt: document.getElementById("customPrompt"),
+        runBtn: document.getElementById("runBtn"),
+        stopBtn: document.getElementById("stopBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        progressCircle: document.getElementById("progressCircle"),
+        progressText: document.getElementById("progressText"),
+        simStatus: document.getElementById("simStatus"),
+        simStepInfo: document.getElementById("simStepInfo"),
+        stepLog: document.getElementById("stepLog"),
+        thinkingIndicator: document.getElementById("thinkingIndicator"),
+        statsGrid: document.getElementById("statsGrid"),
+        memoryList: document.getElementById("memoryList"),
+        eventLog: document.getElementById("eventLog"),
+        statusDot: document.getElementById("statusDot"),
+        backTopLink: document.getElementById("backTopLink")
+      };
+
+      const CIRCLE_R = 28;
+      const CIRCLE_C = 2 * Math.PI * CIRCLE_R;
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function typeColor(type) {
+        if (type === "preference") return { bg: "#6366f120", color: "#a5b4fc" };
+        if (type === "context") return { bg: "#f9731620", color: "#fdba74" };
+        return { bg: "#06b6d420", color: "#67e8f9" };
+      }
+
+      function setView(viewName) {
+        if (state.isRunning && viewName !== "simulation") return;
+        state.activeView = viewName;
+
+        Object.entries(els.views).forEach(([key, viewEl]) => {
+          viewEl.classList.toggle("active", key === viewName);
+        });
+
+        els.navButtons.forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.viewTarget === viewName);
+        });
+      }
+
+      function renderCapabilityBadges(container, activeCapability = null, pulse = false, allActive = false) {
+        container.innerHTML = "";
+        allCapabilities.forEach(name => {
+          const meta = CAPABILITY_META[name] || CAPABILITY_META["Sentez"];
+          const badge = document.createElement("div");
+          badge.className = "cap-badge";
+          const isActive = allActive || activeCapability === name;
+          if (isActive) badge.classList.add("active");
+          if (pulse && activeCapability === name) badge.classList.add("pulsing");
+
+          badge.style.background = isActive ? meta.bg : "#111";
+          badge.style.borderColor = isActive ? meta.border : "#333";
+          badge.style.color = isActive ? meta.text : "#555";
+          badge.style.boxShadow = pulse && activeCapability === name ? `0 0 20px ${meta.border}44` : "none";
+          badge.innerHTML = `<span style="font-size:13px;">${meta.icon}</span>${escapeHtml(name)}`;
+          container.appendChild(badge);
+        });
+      }
+
+      function renderScenarios() {
+        els.scenarioGrid.innerHTML = "";
+        SCENARIOS.forEach(s => {
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "scenario-card" + (state.selectedScenario?.id === s.id ? " selected" : "");
+          card.innerHTML = `
+            <div class="icon">${s.icon}</div>
+            <div class="title">${escapeHtml(s.title)}</div>
+            <div class="desc">${escapeHtml(s.description)}</div>
+            <div class="preview">"${escapeHtml((s.prompt || "").slice(0, 40))}..."</div>
+          `;
+          card.addEventListener("click", () => {
+            state.selectedScenario = s;
+            state.customPrompt = s.prompt;
+            els.customPrompt.value = s.prompt;
+            updateRunButtonState();
+            renderScenarios();
+          });
+          els.scenarioGrid.appendChild(card);
+        });
+      }
+
+      function renderCapabilityCards() {
+        els.capabilityCards.innerHTML = "";
+        CAPABILITY_CARDS.forEach(cap => {
+          const card = document.createElement("div");
+          card.className = "cap-card";
+          card.innerHTML = `
+            <div class="cap-card-icon" style="background:${cap.color}15; border-color:${cap.color}33;">
+              ${cap.icon}
+            </div>
+            <div>
+              <div class="cap-card-title" style="color:${cap.color};">${escapeHtml(cap.name)}</div>
+              <div class="cap-card-desc">${escapeHtml(cap.desc)}</div>
+              <div class="cap-card-grid">
+                ${cap.details.map(d => `<div class="cap-card-item" style="border-left-color:${cap.color}44;">${escapeHtml(d)}</div>`).join("")}
+              </div>
+              <div class="cap-card-example">💡 Örnek: ${escapeHtml(cap.example)}</div>
+            </div>
+          `;
+          els.capabilityCards.appendChild(card);
+        });
+      }
+
+      function renderStats() {
+        const statItems = [
+          { label: "Görevler", value: state.stats.tasks, color: "#6366f1" },
+          { label: "Araçlar", value: state.stats.tools, color: "#f97316" },
+          { label: "Hafıza", value: state.stats.memories, color: "#22c55e" },
+          { label: "İyileştirme", value: state.stats.improvements, color: "#ec4899" }
+        ];
+        els.statsGrid.innerHTML = statItems.map(s => `
+          <div class="stat-box">
+            <div class="stat-value" style="color:${s.color};">${s.value}</div>
+            <div class="stat-label">${escapeHtml(s.label)}</div>
+          </div>
+        `).join("");
+      }
+
+      function renderMemoryPanel() {
+        els.memoryList.innerHTML = "";
+        state.memoryItems.forEach(item => {
+          const colors = typeColor(item.type);
+          const div = document.createElement("div");
+          div.className = "memory-item" + (state.activeMemKey === item.key ? " active" : "");
+          div.innerHTML = `
+            <div class="memory-left">
+              <span class="memory-type" style="background:${colors.bg}; color:${colors.color};">${escapeHtml(item.type)}</span>
+              <span class="memory-content">${escapeHtml(item.key)}: <b>${escapeHtml(item.value)}</b></span>
+            </div>
+            <span class="memory-time">${escapeHtml(item.ts)}</span>
+          `;
+          els.memoryList.appendChild(div);
+        });
+      }
+
+      function renderEventLog() {
+        els.eventLog.innerHTML = state.logs.map(log => {
+          const time = new Date(log.ts).toLocaleTimeString("tr-TR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          });
+          return `<div class="event-item"><span class="event-time">${time}</span>${escapeHtml(log.msg)}</div>`;
+        }).join("");
+        els.eventLog.scrollTop = els.eventLog.scrollHeight;
+      }
+
+      function createToolIndicator(toolId) {
+        if (!toolId || !TOOLS[toolId]) return "";
+        const t = TOOLS[toolId];
+        return `
+          <div class="tool-indicator" style="background:${t.color}15; border-color:${t.color}; color:${t.color};">
+            <span>${t.icon}</span>
+            <span style="font-weight:600;">${escapeHtml(t.label)}</span>
+            <span class="tool-light" style="background:${t.color};"></span>
+          </div>
+        `;
+      }
+
+      function renderResultContent(content) {
+        const lines = String(content || "").split("\n");
+        const html = lines.map(line => {
+          if (line.startsWith("## ")) return `<div class="result-h2">${escapeHtml(line.replace("## ", ""))}</div>`;
+          if (line.startsWith("### ")) return `<div class="result-h3">${escapeHtml(line.replace("### ", ""))}</div>`;
+          if (line.startsWith("- ")) return `<div class="result-bullet">${escapeHtml(line)}</div>`;
+          if (line.startsWith("| ")) return `<div class="result-table">${escapeHtml(line)}</div>`;
+          if (/^\d+\./.test(line)) return `<div class="result-number">${escapeHtml(line)}</div>`;
+          if (line.startsWith("**") && line.endsWith("**")) {
+            return `<div class="result-line" style="font-weight:700; color:#fff;">${escapeHtml(line.replace(/\*\*/g, ""))}</div>`;
+          }
+          if (!line.trim()) return `<div class="result-line"><br></div>`;
+          return `<div class="result-line">${escapeHtml(line)}</div>`;
+        }).join("");
+        return `<div class="result-content">${html}</div>`;
+      }
+
+      function renderStepLog() {
+        const html = [];
+        state.steps.forEach((step, si) => {
+          const isDone = si < state.currentStep;
+          const isActive = si === state.currentStep;
+          const isFuture = si > state.currentStep;
+
+          if (step.isResult && isDone) {
+            html.push(`
+              <div class="result-card">
+                ${renderResultContent(step.content)}
+              </div>
+            `);
+            return;
+          }
+
+          if (step.isResult && !isDone) return;
+
+          let substepsHtml = "";
+          if ((isActive || isDone) && Array.isArray(step.substeps)) {
+            const rows = [];
+            step.substeps.forEach((sub, ssi) => {
+              const subDone = isDone || (isActive && ssi < state.currentSubstep);
+              const subActive = isActive && ssi === state.currentSubstep;
+              const subFuture = isActive && ssi > state.currentSubstep;
+              if (isFuture || subFuture) return;
+
+              const isCode = sub.startsWith("```");
+              const cls = ["substep"];
+              if (subActive) cls.push("active");
+              if (isCode) cls.push("code");
+
+              rows.push(`
+                <div class="${cls.join(" ")}">
+                  ${subActive ? `<span class="substep-dot"></span>` : ""}
+                  ${escapeHtml(sub)}
+                </div>
+              `);
+            });
+
+            substepsHtml = `
+              <div class="substeps">
+                ${rows.join("")}
+              </div>
+            `;
+          }
+
+          const stepClass = [
+            "step-card",
+            isDone ? "done" : "",
+            isActive ? "active" : "",
+            isFuture ? "future" : ""
+          ].join(" ");
+
+          html.push(`
+            <div class="${stepClass}">
+              <div class="step-header">
+                <span class="step-icon">${isDone ? "✅" : isActive ? step.icon : "⏳"}</span>
+                <span class="step-title">${escapeHtml(step.title)}</span>
+                <span class="step-capability">${escapeHtml(step.capability)}</span>
+              </div>
+              ${substepsHtml}
+              ${isActive && step.toolId ? createToolIndicator(step.toolId) : ""}
+            </div>
+          `);
+        });
+
+        els.stepLog.innerHTML = html.join("");
+        els.stepLog.scrollTop = els.stepLog.scrollHeight;
+      }
+
+      function updateProgress() {
+        const totalSubsteps = state.steps.reduce((sum, step) => sum + (step.substeps?.length || 1), 0) || 1;
+        let completedSubsteps = 0;
+        for (let i = 0; i < state.currentStep; i++) {
+          completedSubsteps += state.steps[i]?.substeps?.length || 1;
+        }
+        completedSubsteps += state.currentSubstep;
+        state.progress = Math.min(completedSubsteps / totalSubsteps, 1);
+
+        els.progressCircle.style.strokeDasharray = String(CIRCLE_C);
+        els.progressCircle.style.strokeDashoffset = String(CIRCLE_C * (1 - state.progress));
+        els.progressText.textContent = `${Math.round(state.progress * 100)}%`;
+      }
+
+      function updateSimulationHeader() {
+        const total = state.steps.length || 1;
+        const current = Math.min(state.currentStep + 1, total);
+
+        if (state.isComplete) {
+          els.simStatus.textContent = "✅ Görev Tamamlandı";
+          els.statusDot.style.background = "#6366f1";
+          els.statusDot.style.animation = "none";
+        } else if (state.isRunning) {
+          els.simStatus.textContent = "⚡ Ajan Çalışıyor...";
+          els.statusDot.style.background = "#22c55e";
+          els.statusDot.style.animation = "blink 1s infinite";
+        } else {
+          els.simStatus.textContent = "⏸ Duraklatıldı";
+          els.statusDot.style.background = "#f97316";
+          els.statusDot.style.animation = "none";
+        }
+
+        els.simStepInfo.textContent = `Adım ${current} / ${total}`;
+        els.stopBtn.style.display = state.isRunning ? "inline-flex" : "none";
+        els.scanline.classList.toggle("active", state.isRunning);
+      }
+
+      function renderSimulation() {
+        updateProgress();
+        updateSimulationHeader();
+        renderCapabilityBadges(
+          els.simulationCapabilities,
+          state.activeCapability,
+          state.isRunning,
+          state.isComplete
+        );
+        renderStats();
+        renderMemoryPanel();
+        renderEventLog();
+        renderStepLog();
+
+        const currentStepObj = state.steps[state.currentStep];
+        const showThinking = state.isRunning && currentStepObj && !currentStepObj.isResult;
+        els.thinkingIndicator.classList.toggle("hidden", !showThinking);
+      }
+
+      function updateRunButtonState() {
+        const hasText = els.customPrompt.value.trim().length > 0;
+        els.runBtn.disabled = !hasText;
+      }
+
+      function addLog(msg) {
+        state.logs.push({ ts: Date.now(), msg });
+        renderEventLog();
+      }
+
+      function stopSimulation() {
+        if (state.timerId) {
+          clearTimeout(state.timerId);
+          state.timerId = null;
+        }
+        state.isRunning = false;
+        renderSimulation();
+      }
+
+      function resetAll() {
+        stopSimulation();
+        state.steps = [];
+        state.currentStep = 0;
+        state.currentSubstep = 0;
+        state.progress = 0;
+        state.activeCapability = null;
+        state.activeMemKey = null;
+        state.isComplete = false;
+        setView("home");
+      }
+
+      function runSimulation(scenarioId, prompt) {
+        stopSimulation();
+        state.steps = buildAgentSteps(scenarioId, prompt);
+        state.currentStep = 0;
+        state.currentSubstep = 0;
+        state.progress = 0;
+        state.isRunning = true;
+        state.isComplete = false;
+        state.logs = [{ ts: Date.now(), msg: `Görev başlatıldı: ${prompt || scenarioId}` }];
+        state.activeCapability = null;
+        state.activeMemKey = null;
+        setView("simulation");
+        renderSimulation();
+        tickSimulation();
+      }
+
+      function nextTickDelay(step, currentSubstep) {
+        if (!step) return 400;
+        if (step.isResult) return 400;
+        const currentText = step.substeps?.[currentSubstep] || "";
+        if (currentText.startsWith("```")) return 1200;
+        return 700 + Math.floor(Math.random() * 500);
+      }
+
+      function tickSimulation() {
+        if (!state.isRunning || !state.steps.length) return;
+
+        updateProgress();
+
+        const step = state.steps[state.currentStep];
+        if (!step) {
+          state.isRunning = false;
+          state.isComplete = true;
+          state.progress = 1;
+          renderSimulation();
+          return;
+        }
+
+        state.activeCapability = step.capability;
+        if (step.phase === "memory") {
+          const idx = Math.min(state.currentSubstep, state.memoryItems.length - 1);
+          state.activeMemKey = state.memoryItems[idx]?.key || null;
+        } else {
+          state.activeMemKey = null;
+        }
+
+        renderSimulation();
+
+        state.timerId = window.setTimeout(() => {
+          if (!state.isRunning) return;
+
+          const isLastSubstep = !step.substeps || state.currentSubstep >= step.substeps.length - 1;
+          if (step.isResult || isLastSubstep) {
+            if (step.isResult) {
+              state.stats.tasks += 1;
+            }
+            if (step.toolId) {
+              state.stats.tools += 1;
+            }
+            if (step.phase === "memory") {
+              state.stats.memories += 1;
+            }
+            if (step.phase === "self_improve") {
+              state.stats.improvements += 1;
+            }
+
+            addLog(`${step.icon} ${step.title} tamamlandı`);
+            state.currentStep += 1;
+            state.currentSubstep = 0;
+
+            if (state.currentStep >= state.steps.length) {
+              state.isRunning = false;
+              state.isComplete = true;
+              state.progress = 1;
+              renderSimulation();
+              return;
+            }
+          } else {
+            state.currentSubstep += 1;
+          }
+
+          renderSimulation();
+          tickSimulation();
+        }, nextTickDelay(step, state.currentSubstep));
+      }
+
+      function bindEvents() {
+        els.navButtons.forEach(btn => {
+          btn.addEventListener("click", () => {
+            const target = btn.dataset.viewTarget;
+            if (!target) return;
+            if (state.isRunning && target !== "simulation") return;
+            setView(target);
+          });
+        });
+
+        els.customPrompt.addEventListener("input", () => {
+          state.customPrompt = els.customPrompt.value;
+          state.selectedScenario = null;
+          renderScenarios();
+          updateRunButtonState();
+        });
+
+        els.customPrompt.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && els.customPrompt.value.trim()) {
+            runSimulation(state.selectedScenario?.id || "custom", els.customPrompt.value.trim());
+          }
+        });
+
+        els.runBtn.addEventListener("click", () => {
+          const prompt = els.customPrompt.value.trim();
+          if (!prompt) return;
+          runSimulation(state.selectedScenario?.id || "custom", prompt);
+        });
+
+        els.stopBtn.addEventListener("click", stopSimulation);
+        els.resetBtn.addEventListener("click", resetAll);
+
+        els.backTopLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      }
+
+      function init() {
+        els.progressCircle.style.strokeDasharray = String(CIRCLE_C);
+        els.progressCircle.style.strokeDashoffset = String(CIRCLE_C);
+
+        renderCapabilityBadges(els.homeCapabilities, null, false, true);
+        renderCapabilityCards();
+        renderScenarios();
+        renderStats();
+        renderMemoryPanel();
+        renderEventLog();
+        renderSimulation();
+        bindEvents();
+        updateRunButtonState();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
